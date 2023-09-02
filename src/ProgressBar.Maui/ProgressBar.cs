@@ -7,6 +7,39 @@ namespace ProgressBar.Maui;
 // All the code in this file is included in all platforms.
 public class ProgressBar : SKCanvasView
 {
+   public static readonly BindableProperty ProgressProperty =
+   BindableProperty.Create(nameof(Progress), typeof(float), typeof(ProgressBar), 0f, propertyChanged: OnBindablePropertyChanged);
+
+   public static readonly BindableProperty ProgressColorProperty =
+      BindableProperty.Create(nameof(ProgressColor), typeof(Color), typeof(ProgressBar), Colors.CornflowerBlue, propertyChanged: OnBindablePropertyChanged);
+
+   public static readonly BindableProperty BaseColorProperty =
+      BindableProperty.Create(nameof(BaseColor), typeof(Color), typeof(ProgressBar), Colors.LightGray, propertyChanged: OnBindablePropertyChanged);
+
+   public float Progress
+   {
+      get => (float)GetValue(ProgressProperty);
+      set
+      {
+         if (Math.Abs(value - _previousProgress) >= _RedrawThreshold)
+         {
+            SetValue(ProgressProperty, value);
+            _previousProgress = value;
+         }
+      }
+   }
+   public Color ProgressColor
+   {
+      get => (Color)GetValue(ProgressColorProperty);
+      set => SetValue(ProgressColorProperty, value);
+   }
+   public Color BaseColor
+   {
+      get => (Color)GetValue(BaseColorProperty);
+      set => SetValue(BaseColorProperty, value);
+   }
+
+
    // actual canvas instance to draw on
    private SKCanvas _canvas;
 
@@ -15,34 +48,22 @@ public class ProgressBar : SKCanvasView
 
    // holds information about the dimensions, etc.
    private SKImageInfo _info;
-   private float progress;
-   private static object progressColor;
 
-   public float Progress
+   private const float _RedrawThreshold = 0.5f; // 1% change
+   private float _previousProgress = 0f;
+
+   private SKPaint _basePaint = new()
    {
-      get => (float)GetValue(ProgressProperty);
-      set => SetValue(ProgressProperty, value);
-   }
-   public Color ProgressColor
+      Style = SKPaintStyle.Fill,
+      IsAntialias = true,
+   };
+
+   private SKPaint _progressPaint = new()
    {
-      get => (Color)GetValue(ProgressColorPorperty);
-      set => SetValue(ProgressColorPorperty, value);
-   }
-   public Color BaseColor
-   {
-      get => (Color)GetValue(BaseColorProperty);
-      set => SetValue(BaseColorProperty, value);
-   }
+      Style = SKPaintStyle.Fill,
+      IsAntialias = true,
+   };
 
-   public static readonly BindableProperty ProgressProperty =
-      BindableProperty.Create(nameof(Progress), typeof(float), typeof(ProgressBar), 0f, propertyChanged: OnBindablePropertyChanged);
-
-
-   public static readonly BindableProperty ProgressColorPorperty =
-      BindableProperty.Create(nameof(ProgressColor), typeof(Color), typeof(ProgressBar), Colors.CornflowerBlue, propertyChanged: OnBindablePropertyChanged);
-
-   public static readonly BindableProperty BaseColorProperty =
-      BindableProperty.Create(nameof(BaseColor), typeof(Color), typeof(ProgressBar), Colors.LightGray, propertyChanged: OnBindablePropertyChanged);
 
 
    protected override void OnPaintSurface (SKPaintSurfaceEventArgs e)
@@ -62,34 +83,31 @@ public class ProgressBar : SKCanvasView
 
    private void DrawBase ()
    {
-      using SKPath basePath = new ();
+      using SKPath basePath = new();
 
       basePath.AddRect(_drawRect);
 
-      _canvas.DrawPath(basePath, new()
-      {
-         Style = SKPaintStyle.Fill,
-         Color = BaseColor.ToSKColor(),
-         IsAntialias = true,
-      });
+      _basePaint.Color = BaseColor.ToSKColor();
+
+      _canvas.DrawPath(basePath, _basePaint);
    }
 
    private void DrawProgress ()
    {
-      using SKPath progressPath = new ();
+      using SKPath progressPath = new();
 
       var progressRect = new SKRect(0, 0, _info.Width * Progress, _info.Height);
 
       progressPath.AddRect(progressRect);
 
-      _canvas.DrawPath(progressPath, new()
-      {
-         Style = SKPaintStyle.Fill,
-         Color = ProgressColor.ToSKColor(),
-         IsAntialias = true,
-      });
+      _progressPaint.Color = ProgressColor.ToSKColor();
+
+      _canvas.DrawPath(progressPath, _progressPaint);
    }
-   
-   private static void OnBindablePropertyChanged (BindableObject bindable, object oldValue, object newValue) 
-      => ((ProgressBar)bindable).InvalidateSurface();
+
+   private static void OnBindablePropertyChanged (BindableObject bindable, object oldValue, object newValue)
+   {
+      if (oldValue != newValue)
+         ((ProgressBar)bindable).InvalidateSurface();
+   }
 }

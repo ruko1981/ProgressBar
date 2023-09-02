@@ -2,21 +2,12 @@
 
 public partial class SampleViewModel : BaseViewModel
 {
-	int count = 0;
-
 	[ObservableProperty]
-	public string message = "Click me";
+	private float progress = 0.01f;
 
 	[RelayCommand]
-	private void OnCounterClicked()
+	private void IncrementProgress()
 	{
-		count++;
-
-		if (count == 1)
-			Message = $"Clicked {count} time";
-		else
-			Message = $"Clicked {count} times";
-
-		SemanticScreenReader.Announce(Message);
+		Progress +=0.01f;
 	}
 }
