@@ -21,15 +21,20 @@ public partial class SamplePage : ContentPage
                HeightRequest = 5,
                ProgressColor = Colors.DeepSkyBlue,
             }
+            .Assign(out ProgressBar.Maui.ProgressBar progressBar)
             .Bind(ProgressBar.Maui.ProgressBar.ProgressProperty, nameof(SampleViewModel.Progress), BindingMode.OneWay),
 
             new Button
             {
                Text = "Increment",
             }
-            .BindCommand(nameof(SampleViewModel.IncrementProgressCommand))
+            .BindCommand(nameof(SampleViewModel.IncrementProgressCommand)),
+
+            new Button
+            {
+               Text = "Update Progress Bar",
+            }.BindCommand(nameof(SampleViewModel.UpdateProgressBarCommand), parameterSource: progressBar)
          }
       };
-
    }
 }

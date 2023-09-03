@@ -1,6 +1,7 @@
 ﻿using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
+using System.Diagnostics;
 
 namespace ProgressBar.Maui;
 
@@ -8,26 +9,20 @@ namespace ProgressBar.Maui;
 public class ProgressBar : SKCanvasView
 {
    public static readonly BindableProperty ProgressProperty =
-   BindableProperty.Create(nameof(Progress), typeof(float), typeof(ProgressBar), 0f, propertyChanged: OnBindablePropertyChanged);
+   BindableProperty.Create(nameof(Progress), typeof(float), typeof(ProgressBar), 0f, propertyChanged: OnProgressPropertyChanged, coerceValue: ClampProgressValue);
 
    public static readonly BindableProperty ProgressColorProperty =
-      BindableProperty.Create(nameof(ProgressColor), typeof(Color), typeof(ProgressBar), Colors.CornflowerBlue, propertyChanged: OnBindablePropertyChanged);
+      BindableProperty.Create(nameof(ProgressColor), typeof(Color), typeof(ProgressBar), Colors.CornflowerBlue, propertyChanged: OnColorPropertyChanged);
 
    public static readonly BindableProperty BaseColorProperty =
-      BindableProperty.Create(nameof(BaseColor), typeof(Color), typeof(ProgressBar), Colors.LightGray, propertyChanged: OnBindablePropertyChanged);
+      BindableProperty.Create(nameof(BaseColor), typeof(Color), typeof(ProgressBar), Colors.LightGray, propertyChanged: OnColorPropertyChanged);
 
    public float Progress
    {
       get => (float)GetValue(ProgressProperty);
-      set
-      {
-         if (Math.Abs(value - _previousProgress) >= _RedrawThreshold)
-         {
-            SetValue(ProgressProperty, value);
-            _previousProgress = value;
-         }
-      }
+      set => SetValue(ProgressProperty, value);
    }
+
    public Color ProgressColor
    {
       get => (Color)GetValue(ProgressColorProperty);
@@ -49,8 +44,8 @@ public class ProgressBar : SKCanvasView
    // holds information about the dimensions, etc.
    private SKImageInfo _info;
 
-   private const float _RedrawThreshold = 0.5f; // 1% change
-   private float _previousProgress = 0f;
+   private const float _RedrawThreshold = 0.1f; // 1% change
+   private float _displayedProgress = 0f;
 
    private SKPaint _basePaint = new()
    {
@@ -63,7 +58,6 @@ public class ProgressBar : SKCanvasView
       Style = SKPaintStyle.Fill,
       IsAntialias = true,
    };
-
 
 
    protected override void OnPaintSurface (SKPaintSurfaceEventArgs e)
@@ -105,9 +99,38 @@ public class ProgressBar : SKCanvasView
       _canvas.DrawPath(progressPath, _progressPaint);
    }
 
-   private static void OnBindablePropertyChanged (BindableObject bindable, object oldValue, object newValue)
+   private static void OnProgressPropertyChanged (BindableObject bindable, object oldValue, object newValue)
+   {
+      if (oldValue == newValue)
+         return;
+
+      if ((float)newValue - ((ProgressBar)bindable)._displayedProgress >= _RedrawThreshold)
+         ((ProgressBar)bindable).Update();
+   }
+
+   private static void OnColorPropertyChanged (BindableObject bindable, object oldValue, object newValue)
    {
       if (oldValue != newValue)
          ((ProgressBar)bindable).InvalidateSurface();
+   }
+
+   public void Update ()
+   {
+      if (_displayedProgress != Progress)
+      {
+         _displayedProgress = Progress;
+         InvalidateSurface();
+      }
+   }
+
+
+   private static object ClampProgressValue (BindableObject bindable, object value)
+   {
+      return (float)value switch
+      {
+         < 0 => 0,
+         > 1 => 1,
+         _ => value,
+      };
    }
 }
