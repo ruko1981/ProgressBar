@@ -8,30 +8,36 @@ namespace ProgressBar.Maui;
 // All the code in this file is included in all platforms.
 public class ProgressBar : SKCanvasView
 {
-   public static readonly BindableProperty ProgressProperty =
-   BindableProperty.Create(nameof(Progress), typeof(float), typeof(ProgressBar), 0f, propertyChanged: OnProgressPropertyChanged, coerceValue: ClampProgressValue);
-
-   public static readonly BindableProperty ProgressColorProperty =
-      BindableProperty.Create(nameof(ProgressColor), typeof(Color), typeof(ProgressBar), Colors.CornflowerBlue, propertyChanged: OnColorPropertyChanged);
-
-   public static readonly BindableProperty BaseColorProperty =
-      BindableProperty.Create(nameof(BaseColor), typeof(Color), typeof(ProgressBar), Colors.LightGray, propertyChanged: OnColorPropertyChanged);
+   public static readonly BindableProperty ProgressProperty = BindableProperty.Create(nameof(Progress), typeof(float), typeof(ProgressBar), 0.0f, propertyChanged: OnProgressPropertyChanged, coerceValue: ClampProgressValue);
+   public static readonly BindableProperty BaseColorProperty = BindableProperty.Create(nameof(BaseColor), typeof(Color), typeof(ProgressBar), Colors.LightGray, propertyChanged: OnColorPropertyChanged);
+   public static readonly BindableProperty ProgressColorProperty = BindableProperty.Create(nameof(ProgressColor), typeof(Color), typeof(ProgressBar), Colors.CornflowerBlue, propertyChanged: OnColorPropertyChanged);
+   public static readonly BindableProperty GradientColorProperty = BindableProperty.Create(nameof(GradientColor), typeof(Color), typeof(ProgressBar), Colors.CornflowerBlue.WithLuminosity(0.5f), propertyChanged: OnColorPropertyChanged);
+   public static readonly BindableProperty UseGradientProperty = BindableProperty.Create(nameof(UseGradient), typeof(bool), typeof(ProgressBar), false, propertyChanged: OnColorPropertyChanged);
 
    public float Progress
    {
       get => (float)GetValue(ProgressProperty);
       set => SetValue(ProgressProperty, value);
    }
-
+   public Color BaseColor
+   {
+      get => (Color)GetValue(BaseColorProperty);
+      set => SetValue(BaseColorProperty, value);
+   }
    public Color ProgressColor
    {
       get => (Color)GetValue(ProgressColorProperty);
       set => SetValue(ProgressColorProperty, value);
    }
-   public Color BaseColor
+   public Color GradientColor
    {
-      get => (Color)GetValue(BaseColorProperty);
-      set => SetValue(BaseColorProperty, value);
+      get => (Color)GetValue(GradientColorProperty);
+      set => SetValue(GradientColorProperty, value);
+   }
+   public bool UseGradient
+   {
+      get => (bool)GetValue(UseGradientProperty);
+      set => SetValue(UseGradientProperty, value);
    }
 
 
@@ -94,17 +100,28 @@ public class ProgressBar : SKCanvasView
 
       progressPath.AddRect(progressRect);
 
-      _progressPaint.Color = ProgressColor.ToSKColor();
+      if (UseGradient)
+      {
+         _progressPaint.Shader = SKShader.CreateLinearGradient(
+            new SKPoint(_drawRect.Left, _drawRect.MidY),
+            new SKPoint(_drawRect.Right, _drawRect.MidY),
+            new SKColor[] { ProgressColor.ToSKColor(), GradientColor.ToSKColor() },
+            SKShaderTileMode.Clamp);
+      }
+      else
+      {
+         _progressPaint.Color = ProgressColor.ToSKColor();
+      }
 
       _canvas.DrawPath(progressPath, _progressPaint);
    }
 
    private static void OnProgressPropertyChanged (BindableObject bindable, object oldValue, object newValue)
    {
-      if (oldValue == newValue)
+      if ((float)oldValue == (float)newValue)
          return;
 
-      if ((float)newValue - ((ProgressBar)bindable)._displayedProgress >= _RedrawThreshold)
+      if ((float)newValue - ((ProgressBar)bindable)._displayedProgress >= _RedrawThreshold || ((float)newValue >= 1.0f))
          ((ProgressBar)bindable).Update();
    }
 
@@ -128,9 +145,9 @@ public class ProgressBar : SKCanvasView
    {
       return (float)value switch
       {
-         < 0 => 0,
-         > 1 => 1,
-         _ => value,
+         < 0 => 0.0f,
+         > 1 => 1.0f,
+         _ => (float)value,
       };
    }
 }

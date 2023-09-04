@@ -20,6 +20,8 @@ public partial class SamplePage : ContentPage
                WidthRequest = 300,
                HeightRequest = 5,
                ProgressColor = Colors.DeepSkyBlue,
+               GradientColor = Colors.MediumPurple,
+               UseGradient = true,
             }
             .Assign(out ProgressBar.Maui.ProgressBar progressBar)
             .Bind(ProgressBar.Maui.ProgressBar.ProgressProperty, nameof(SampleViewModel.Progress), BindingMode.OneWay),
